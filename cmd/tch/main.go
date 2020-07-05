@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"time"
@@ -43,18 +44,12 @@ func main() {
 	year, month, day := t.DateString()
 	hour, minute, second := t.UTCClockString()
 
-	tmpl := "SA200STT;%s;02;%s%s%s;%s:%s:%s;%s;%s;%s;%s;%s;%s;%s;%s;0;%s;%s;0;\r"
+	tmpl := "SA200STT;%s;02;%s%s%s;%s:%s:%s;0290;%s;%s;%s;%s;1;1;1;1;1;1;1;\r"
 
 	latitude := "0"
 	longitude := "0"
 	speed := "0"
 	course := "0"
-	satellites := "0"
-	isValid := "0"
-	odometer := "0"
-	power := "1"
-	status := "0"
-	index := "0"
 
 	cmdc := make(chan *engine.Command)
 	errc := make(chan error)
@@ -96,7 +91,7 @@ func main() {
 			}
 
 			if cmd.Name == string(engine.Commit) {
-				message := fmt.Sprintf(tmpl, id, year, month, day, hour, minute, second, latitude, longitude, speed, course, satellites, isValid, odometer, power, status, index)
+				message := fmt.Sprintf(tmpl, id, year, month, day, hour, minute, second, latitude, longitude, speed, course)
 				buffer := bytes.NewBufferString(message)
 				log.Println("[To server]:", buffer.String())
 
@@ -106,6 +101,10 @@ func main() {
 			}
 
 		case err := <-errc:
+			if err == io.EOF {
+				log.Println("[Error]: EOF from Server")
+				return
+			}
 			log.Println("ERROR:", err)
 		}
 	}
